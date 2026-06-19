@@ -2,6 +2,10 @@
 
 Live Site URL: https://your-ideavault-site.vercel.app
 
+Server Side GitHub URL: https://github.com/nahid03nirob/assignment-9/tree/main/server
+
+Live API URL: https://your-ideavault-server.onrender.com
+
 IdeaVault is a web-based startup idea validation platform where users can share concepts, explore community ideas, and discuss improvements through comments.
 
 ## Features
