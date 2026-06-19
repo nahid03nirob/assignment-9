@@ -974,3 +974,296 @@ data-id="${idea.id}">${icons.trash} Delete</button>` : ""}
 </article>
 `;
 }
+
+function commentView(comment) {
+const mine = currentUser && comment.userId === currentUser.id;
+return `
+<div class="comment">
+<div class="commenthead"><strong>${escapeHtml(comment.userName)}</strong><span>${formatDate(comment.createdAt
+)}</span></div>
+<p>${escapeHtml(comment.text)}</p>
+${mine ? `<button class="btn secondary" data-action="edit-comment" dataid="${comment.id}">${icons.edit} Edit</button> <button class="btn danger" data-action="deletecomment" data-id="${comment.id}">${icons.trash} Delete</button>` : ""}
+</div>
+`;
+}
+function sectionHead(title, text, link) {
+return `<div class="section-head"><div><h2>${title}</h2><p>${text}</p></div><a class="btn
+secondary" href="${link}">View All</a></div>`;
+28 | P a g e
+}
+function feature(icon, title, text) {
+return `<article class="feature">${icon}<h3>${title}</h3><p class="muted">${text}</p></article>`;
+}
+function stat(icon, value, label) {
+return `<article class="stat">${icon}<strong>${value}</strong><span
+class="muted">${label}</span></article>`;
+}
+function field(label, name, type, value = "", required = false, placeholder = "") {
+return `<div class="field"><label for="${name}">${label}</label><input id="${name}" name="${name}"
+type="${type}" value="${escapeHtml(value || "")}" ${required ? "required" : ""}
+placeholder="${placeholder}" /></div>`;
+}
+function empty(title, text) {
+return `<div class="empty"><div>${icons.spark}<h2>${title}</h2><p
+class="muted">${text}</p></div></div>`;
+}
+function afterRender(hash) {
+if (hash === "#/") startSlider();
+else clearInterval(slideTimer);
+}
+function startSlider() {
+29 | P a g e
+clearInterval(slideTimer);
+slideTimer = setInterval(() => setSlide((slideIndex + 1) % 3), 4200);
+}
+function setSlide(index) {
+slideIndex = index;
+document.querySelectorAll(".slide").forEach((slide, i) => {
+const selected = i === index;
+slide.classList.toggle("active", selected);
+slide.classList.toggle("opacity-100", selected);
+slide.classList.toggle("opacity-0", !selected);
+});
+document.querySelectorAll(".dot").forEach((dot, i) => {
+const selected = i === index;
+dot.classList.toggle("active", selected);
+dot.classList.toggle("bg-white", selected);
+dot.classList.toggle("bg-white/40", !selected);
+});
+}
+function handleGlobalClick(event) {
+const button = event.target.closest("[data-action]");
+if (!button) return;
+const action = button.dataset.action;
+if (action === "theme") toggleTheme();
+if (action === "mobile-menu") document.getElementById("navLinks")?.classList.toggle("hidden");
+30 | P a g e
+if (action === "profile-menu")
+document.getElementById("profileDropdown")?.classList.toggle("hidden");
+if (action === "logout") {
+clearSession();
+showToast("Logged out successfully.", "success");
+navigate("#/");
+render();
+}
+if (action === "google-login") googleLogin();
+if (action === "slide") setSlide(Number(button.dataset.index));
+if (action === "bookmark") bookmarkIdea(button.dataset.id);
+if (action === "edit-idea") openIdeaModal(button.dataset.id);
+if (action === "delete-idea") confirmDeleteIdea(button.dataset.id);
+if (action === "edit-comment") editComment(button.dataset.id);
+if (action === "delete-comment") deleteComment(button.dataset.id);
+if (action === "close-modal") closeModal();
+if (action === "confirm-delete") deleteIdea(button.dataset.id);
+}
+function handleSubmit(event) {
+const form = event.target;
+if (!form.id) return;
+event.preventDefault();
+const data = Object.fromEntries(new FormData(form).entries());
+if (form.id === "loginForm") login(data);
+if (form.id === "registerForm") register(data);
+if (form.id === "addIdeaForm") saveIdea(data);
+31 | P a g e
+if (form.id === "updateIdeaForm") updateIdea(form.dataset.id, data);
+if (form.id === "commentForm") addComment(form.dataset.idea, data.commentText);
+if (form.id === "profileForm") updateProfile(data);
+}
+function handleInput(event) {
+if (["searchInput", "categoryFilter", "fromDate", "toDate"].includes(event.target.id)) filterIdeas();
+}
+function toggleTheme() {
+state.theme = state.theme === "dark" ? "light" : "dark";
+document.documentElement.dataset.theme = state.theme;
+document.documentElement.classList.toggle("dark", state.theme === "dark");
+saveState();
+render();
+}
+function login(data) {
+const user = state.users.find((item) => item.email.toLowerCase() === data.email.toLowerCase() &&
+item.password === data.password);
+if (!user) return showToast("Invalid email or password.", "error");
+setSession(user);
+showToast("Login successful.", "success");
+navigate(pendingRoute || "#/");
+}
+function googleLogin() {
+32 | P a g e
+let user = state.users.find((item) => item.email === "google.user@ideavault.dev");
+if (!user) {
+user = { id: uid(), name: "Google Founder", email: "google.user@ideavault.dev", password:
+"GooglePass", photo: "https://images.unsplash.com/photo-1500648767791-
+00dcc994a43e?auto=format&fit=crop&w=120&q=80" };
+state.users.push(user);
+saveState();
+}
+setSession(user);
+showToast("Google login successful.", "success");
+navigate(pendingRoute || "#/");
+}
+function register(data) {
+if (state.users.some((user) => user.email.toLowerCase() === data.email.toLowerCase())) return
+showToast("Email already exists.", "error");
+if (!/^(?=.*[a-z])(?=.*[A-Z]).{6,}$/.test(data.password)) return showToast("Password needs 6 characters
+with uppercase and lowercase letters.", "error");
+const user = { id: uid(), ...data };
+state.users.push(user);
+saveState();
+setSession(user);
+showToast("Registration successful.", "success");
+navigate(pendingRoute || "#/");
+}
+function saveIdea(data) {
+const idea = normalizeIdea(data);
+33 | P a g e
+state.ideas.unshift(idea);
+saveState();
+showToast("Idea submitted successfully.", "success");
+navigate("#/my-ideas");
+}
+function updateIdea(id, data) {
+const index = state.ideas.findIndex((idea) => idea.id === id && idea.ownerId === currentUser.id);
+if (index < 0) return showToast("You can only update your own ideas.", "error");
+state.ideas[index] = { ...state.ideas[index], ...normalizeIdea(data, false) };
+saveState();
+closeModal();
+showToast("Idea updated successfully.", "success");
+render();
+}
+function normalizeIdea(data, isNew = true) {
+return {
+...(isNew ? { id: uid(), ownerId: currentUser.id, ownerName: currentUser.name, likes: 0, createdAt: new
+Date().toISOString() } : {}),
+title: data.title.trim(),
+shortDescription: data.shortDescription.trim(),
+detailedDescription: data.detailedDescription.trim(),
+category: data.category,
+tags: data.tags ? data.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [],
+image: data.image.trim(),
+budget: data.budget ? Number(data.budget) : "",
+34 | P a g e
+targetAudience: data.targetAudience.trim(),
+problemStatement: data.problemStatement.trim(),
+proposedSolution: data.proposedSolution.trim()
+};
+}
+function addComment(ideaId, text) {
+state.comments.unshift({ id: uid(), ideaId, userId: currentUser.id, userName: currentUser.name, text:
+text.trim(), createdAt: new Date().toISOString() });
+saveState();
+showToast("Comment added.", "success");
+render();
+}
+function editComment(id) {
+const comment = state.comments.find((item) => item.id === id && item.userId === currentUser.id);
+if (!comment) return showToast("You can only edit your own comments.", "error");
+const text = prompt("Update your comment", comment.text);
+if (!text?.trim()) return;
+comment.text = text.trim();
+comment.createdAt = new Date().toISOString();
+saveState();
+showToast("Comment updated.", "success");
+render();
+}
+function deleteComment(id) {
+35 | P a g e
+const comment = state.comments.find((item) => item.id === id && item.userId === currentUser.id);
+if (!comment) return showToast("You can only delete your own comments.", "error");
+if (!confirm("Delete this comment?")) return;
+state.comments = state.comments.filter((item) => item.id !== id);
+saveState();
+showToast("Comment deleted.", "success");
+render();
+}
+function updateProfile(data) {
+const user = state.users.find((item) => item.id === currentUser.id);
+user.name = data.name.trim();
+user.photo = data.photo.trim();
+state.ideas.forEach((idea) => {
+if (idea.ownerId === user.id) idea.ownerName = user.name;
+});
+state.comments.forEach((comment) => {
+if (comment.userId === user.id) comment.userName = user.name;
+});
+currentUser = user;
+saveState();
+showToast("Profile updated.", "success");
+render();
+}
+function bookmarkIdea(id) {
+if (!currentUser) {
+36 | P a g e
+pendingRoute = route();
+showToast("Login to bookmark ideas.", "error");
+navigate("#/login");
+return;
+}
+const existing = state.bookmarks.find((item) => item.ideaId === id && item.userId === currentUser.id);
+if (existing) state.bookmarks = state.bookmarks.filter((item) => item !== existing);
+else state.bookmarks.push({ id: uid(), ideaId: id, userId: currentUser.id, createdAt: new
+Date().toISOString() });
+saveState();
+showToast(existing ? "Bookmark removed." : "Idea bookmarked.", "success");
+}
+function openIdeaModal(id) {
+const idea = state.ideas.find((item) => item.id === id && item.ownerId === currentUser.id);
+if (!idea) return;
+document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="modalRoot"><div
+class="modal"><button class="icon-btn float-right" data-action="closemodal">x</button>${ideaFormView(idea)}</div></div>`);
+applyTailwind(document.getElementById("modalRoot"));
+}
+function confirmDeleteIdea(id) {
+document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="modalRoot"><div
+class="modal small"><h2>Delete idea?</h2><p class="muted">This removes the idea and its
+comments.</p><button class="btn danger" data-action="confirm-delete" dataid="${id}">Delete</button> <button class="btn secondary" data-action="closemodal">Cancel</button></div></div>`);
+applyTailwind(document.getElementById("modalRoot"));
+37 | P a g e
+}
+function deleteIdea(id) {
+state.ideas = state.ideas.filter((idea) => !(idea.id === id && idea.ownerId === currentUser.id));
+state.comments = state.comments.filter((comment) => comment.ideaId !== id);
+state.bookmarks = state.bookmarks.filter((bookmark) => bookmark.ideaId !== id);
+saveState();
+closeModal();
+showToast("Idea deleted.", "success");
+render();
+}
+function closeModal() {
+document.getElementById("modalRoot")?.remove();
+}
+function filterIdeas() {
+const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
+const category = document.getElementById("categoryFilter")?.value || "";
+const from = document.getElementById("fromDate")?.value;
+const to = document.getElementById("toDate")?.value;
+const filtered = state.ideas.filter((idea) => {
+const created = idea.createdAt.slice(0, 10);
+return idea.title.toLowerCase().includes(search) && (!category || idea.category === category) && (!from
+|| created >= from) && (!to || created <= to);
+});
+document.getElementById("ideasResults").innerHTML = ideaGrid(filtered);
+38 | P a g e
+applyTailwind(document.getElementById("ideasResults"));
+}
+function trendScore(idea) {
+const comments = state.comments.filter((comment) => comment.ideaId === idea.id).length;
+const ageDays = Math.max(1, (Date.now() - new Date(idea.createdAt)) / 86400000);
+return idea.likes * 2 + comments * 5 + 12 / ageDays;
+}
+function formatDate(value) {
+return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new
+Date(value));
+}
+function escapeHtml(value) {
+return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
+"'": "&#039;" }[char]));
+}
+function showToast(message, type = "") {
+const root = document.getElementById("toast-root");
+const toast = document.createElement("div");
+toast.className = `toast ${type}`;
+toast.textContent = message;
+root.appendChild(toast);
+applyTailwind(root);
+setTimeout(() => toast.remove(), 3200);
+}
