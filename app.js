@@ -569,3 +569,125 @@ comments: Array.isArray(saved.comments) ? saved.comments : [],
 bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : []
 };
 }
+function getSessionUser() {
+const token = localStorage.getItem(TOKEN_KEY);
+if (!token) return null;
+try {
+const userId = atob(token.split(".")[1] || "");
+return state.users.find((user) => user.id === userId) || null;
+} catch {
+localStorage.removeItem(TOKEN_KEY);
+return null;
+}
+}
+function setSession(user) {
+localStorage.setItem(TOKEN_KEY, `local.${btoa(user.id)}.${Date.now()}`);
+currentUser = user;
+}
+function clearSession() {
+13 | P a g e
+localStorage.removeItem(TOKEN_KEY);
+currentUser = null;
+}
+function route() {
+return location.hash || "#/";
+}
+function navigate(hash) {
+location.hash = hash;
+}
+function isPrivate(hash) {
+return ["#/add", "#/my-ideas", "#/interactions", "#/profile"].includes(hash) || hash.startsWith("#/ideas/");
+}
+function render() {
+const hash = route();
+if (isPrivate(hash) && !currentUser) {
+pendingRoute = hash;
+showToast("Please log in to continue.", "error");
+navigate("#/login");
+return;
+}
+const app = document.getElementById("app");
+app.innerHTML = `
+14 | P a g e
+<div class="app-shell">
+${navbar()}
+<main>${loading()}</main>
+${footer()}
+</div>
+`;
+applyTailwind(document);
+setTitle(hash);
+setTimeout(() => {
+const main = document.querySelector("main");
+try {
+main.innerHTML = viewFor(hash);
+applyTailwind(main);
+afterRender(hash);
+} catch (error) {
+console.error(error);
+main.innerHTML = notFoundView("Something went wrong", "Please refresh the page or try another
+route.");
+applyTailwind(main);
+showToast("A page error occurred. Please try again.", "error");
+}
+}, 160);
+}
+function setTitle(hash) {
+const labels = {
+15 | P a g e
+"#/": "Home",
+"#/ideas": "Ideas",
+"#/add": "Add Idea",
+"#/my-ideas": "My Ideas",
+"#/interactions": "My Interactions",
+"#/login": "Login",
+"#/register": "Register",
+"#/profile": "Profile"
+};
+document.title = `${labels[hash] || (hash.startsWith("#/ideas/") ? "Idea Details" : "Not Found")} |
+IdeaVault`;
+}
+function navbar() {
+const links = [
+["#/", "Home", false],
+["#/ideas", "Ideas", false],
+["#/add", "Add Idea", true],
+["#/my-ideas", "My Ideas", true],
+["#/interactions", "My Interactions", true]
+];
+return `
+<header class="navbar">
+<div class="container nav-inner">
+<a class="brand" href="#/"><span class="brandmark">${icons.vault}</span><span>IdeaVault</span></a>
+<nav class="nav-links" id="navLinks">
+${links
+16 | P a g e
+.filter(([, , privateLink]) => !privateLink || currentUser)
+.map(([href, text]) => `<a class="nav-link ${route() === href ? "active" : ""}"
+href="${href}">${text}</a>`)
+.join("")}
+</nav>
+<div class="nav-actions">
+<button class="icon-btn" data-action="theme" title="Toggle theme">${state.theme === "dark" ?
+icons.sun : icons.moon}</button>
+${
+currentUser
+? `<div class="profile">
+<button class="icon-btn" data-action="profile-menu" title="Profile menu"><img class="avatar"
+src="${escapeHtml(currentUser.photo)}" alt="${escapeHtml(currentUser.name)}" /></button>
+<div class="dropdown" id="profileDropdown">
+<p><strong>${escapeHtml(currentUser.name)}</strong><br><span
+class="muted">${escapeHtml(currentUser.email)}</span></p>
+<a class="btn secondary" href="#/profile">${icons.edit} Profile Management</a>
+<button class="btn secondary" data-action="logout">Logout</button>
+</div>
+</div>`
+: `<a class="btn secondary" href="#/login">Login/Register</a>`
+}
+<button class="icon-btn mobile-toggle" data-action="mobile-menu" title="Open
+menu">${icons.menu}</button>
+</div>
+</div>
+</header>
+`;
+}
