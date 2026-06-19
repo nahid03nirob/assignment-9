@@ -307,3 +307,83 @@ function bindEvents() {
 }
 
 render();
+let seedIdeaIndex = 0;
+const initialState = {
+theme: "light",
+users: [
+{
+id: "u_demo",
+name: "Demo Founder",
+3 | P a g e
+email: "demo@ideavault.dev",
+password: "DemoPass",
+photo: "https://images.unsplash.com/photo-1494790108377-
+be9c29b29330?auto=format&fit=crop&w=120&q=80"
+}
+],
+ideas: [
+makeSeedIdea("Carbon Lens for Small Retailers", "Climate", "A lightweight emissions tracker that
+estimates store-level carbon impact from utility bills and inventory receipts.", "Small retailers rarely have
+sustainability staff. Carbon Lens converts everyday operational data into practical carbon reduction
+tasks and shareable progress reports.", "Independent retailers", "Carbon accounting is expensive and too
+complex for neighborhood shops.", "Automated receipt parsing, utility import, and clear
+recommendations ranked by cost impact.", 18000, ["climate", "analytics"], seedImages[0], 32, 18),
+makeSeedIdea("AI Mentor Booth", "AI", "A voice-first learning kiosk for community centers that helps
+adults practice interviews, resumes, and digital skills.", "The booth provides guided practice sessions,
+local-language coaching, and a dashboard for mentors to see where learners need support.",
+"Community education programs", "Adult learners need repeated, low-pressure practice outside class
+hours.", "Conversational AI, rubric-based feedback, and printable next steps.", 42000, ["education",
+"voice-ai"], seedImages[1], 28, 13),
+makeSeedIdea("MediLoop Check-ins", "Health", "A post-visit follow-up tool that catches patient
+confusion before it turns into readmission risk.", "MediLoop sends simple mobile check-ins after
+appointments and flags unclear medication instructions, worsening symptoms, and missed follow-ups.",
+"Clinics and discharge teams", "Patients often leave visits overwhelmed and unsure what to do next.",
+"Plain-language prompts, risk scoring, and nurse-friendly queues.", 65000, ["health", "patient-care"],
+seedImages[2], 25, 16),
+makeSeedIdea("SkillSwap Campus", "Education", "A barter marketplace where students trade microlessons in design, coding, writing, and career prep.", "Students earn credits by teaching what they know
+and spend credits to book short peer learning sessions.", "University students", "Many students need
+affordable help, while peers have useful skills but no easy exchange system.", "Reputation-based credit
+exchange with moderated learning circles.", 9000, ["campus", "marketplace"], seedImages[3], 21, 9),
+makeSeedIdea("LocalPay Float", "FinTech", "A cash-flow smoother for microbusinesses that predicts
+tight weeks and suggests safer payment timing.", "LocalPay Float connects invoices, sales, and recurring
+expenses, then gives owners simple cash-position warnings before the crunch arrives.", "Microbusiness
+owners", "Small operators make payment decisions without enough forward visibility.", "Forecasting,
+4 | P a g e
+invoice reminders, and scenario planning in plain language.", 35000, ["finance", "smb"], seedImages[4],
+19, 11),
+makeSeedIdea("WasteLess Kitchen", "Food", "A restaurant prep assistant that turns leftover patterns
+into weekly purchasing and menu suggestions.", "The tool tracks ingredient waste from quick end-of-shift
+inputs and recommends order adjustments or specials to reduce spoilage.", "Small restaurants", "Food
+waste quietly eats margins and sustainability goals.", "Waste logging, trend alerts, and menu idea
+generation.", 22000, ["food", "operations"], seedImages[5], 17, 8)
+],
+comments: [
+{ id: uid(), ideaId: "idea_1", userId: "u_demo", userName: "Demo Founder", text: "The retailer reporting
+angle makes this easier to sell than a generic dashboard.", createdAt: daysAgo(2) },
+{ id: uid(), ideaId: "idea_2", userId: "u_demo", userName: "Demo Founder", text: "Could work beautifully
+with libraries and job centers.", createdAt: daysAgo(1) }
+],
+bookmarks: []
+};
+function makeSeedIdea(title, category, shortDescription, detailedDescription, targetAudience,
+problemStatement, proposedSolution, budget, tags, image, likes, commentsCount) {
+const index = ++seedIdeaIndex;
+return {
+id: `idea_${index}`,
+ownerId: "u_demo",
+ownerName: "Demo Founder",
+title,
+category,
+shortDescription,
+detailedDescription,
+tags,
+5 | P a g e
+image,
+budget,
+targetAudience,
+problemStatement,
+proposedSolution,
+likes,
+createdAt: daysAgo(index + commentsCount / 10)
+};
+}
