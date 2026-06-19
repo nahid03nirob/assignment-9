@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IdeaVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&dis
+play=swap"
+rel="stylesheet"
+/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: "class",
+theme: {
+extend: {
+fontFamily: {
+sans: ["Inter", "system-ui", "sans-serif"]
+},
+colors: {
+vault: {
+teal: "#0d9488",
+blue: "#2563eb",
+amber: "#f59e0b"
+}
+},
+borderRadius: {
+vault: "8px"
+}
+}
+}
+};
+</script>
+</head>
+<body class="font-sans antialiased">
+<div id="app"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+<script src="app.js"></script>
+</body>
+</html>
