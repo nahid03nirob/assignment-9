@@ -691,3 +691,286 @@ menu">${icons.menu}</button>
 </header>
 `;
 }
+function footer() {
+return `
+<footer class="footer">
+<div class="container footer-grid">
+<div>
+<a class="brand" href="#/"><span class="brandmark">${icons.vault}</span><span>IdeaVault</span></a>
+<p>Startup idea sharing, validation, and collaboration for builders who want feedback early.</p>
+</div>
+<div><strong>Platform</strong><a href="#/ideas">Ideas</a><a href="#/ideas">Categories</a><a
+href="#/add">Add Idea</a></div>
+<div><strong>Contact</strong><p>hello@ideavault.dev</p><p>Dhaka, Bangladesh</p></div>
+<div><strong>Social</strong><a href="#">LinkedIn</a><a href="#">${icons.x} X</a><a
+href="#">GitHub</a><p>Copyright ${new Date().getFullYear()} IdeaVault</p></div>
+</div>
+</footer>
+`;
+}
+function loading() {
+return `<div class="spinner-wrap"><div class="spinner" aria-label="Loading"></div></div>`;
+}
+function viewFor(hash) {
+if (hash === "#/" || hash === "") return homeView();
+if (hash === "#/ideas") return ideasView();
+if (hash.startsWith("#/ideas/")) return detailsView(hash.split("/").pop());
+18 | P a g e
+if (hash === "#/add") return ideaFormView();
+if (hash === "#/my-ideas") return myIdeasView();
+if (hash === "#/interactions") return interactionsView();
+if (hash === "#/login") return loginView();
+if (hash === "#/register") return registerView();
+if (hash === "#/profile") return profileView();
+return notFoundView();
+}
+function homeView() {
+const trending = [...state.ideas]
+.sort((a, b) => trendScore(b) - trendScore(a))
+.slice(0, 6);
+return `
+<section class="hero">
+<div class="container">
+<div class="slider" id="slider">
+${[
+["Validate Bold Ideas Faster", "Share a startup concept, gather useful feedback, and find the signal
+before you spend months building.", seedImages[0]],
+["Find Collaborators With Context", "Explore problems, audiences, budgets, and proposed
+solutions from founders thinking out loud.", seedImages[4]],
+["Turn Feedback Into Momentum", "Comments and interactions help shape raw concepts into
+sharper, community-tested opportunities.", seedImages[2]]
+]
+.map((slide, i) => `<article class="slide ${i === 0 ? "active" : ""}" data-bg="${slide[2]}"><div
+class="slide-content"><span class="kicker">Startup validation
+hub</span><h1>${slide[0]}</h1><p>${slide[1]}</p><a class="btn primary" href="#/ideas">Explore
+Ideas</a></div></article>`)
+19 | P a g e
+.join("")}
+<div class="slider-dots">${[0, 1, 2].map((i) => `<button class="dot ${i === 0 ? "active" : ""}" dataaction="slide" data-index="${i}" title="Slide ${i + 1}"></button>`).join("")}</div>
+</div>
+</div>
+</section>
+<section class="section"><div class="container">${sectionHead("Trending Ideas", "Top ideas ranked by
+likes and recent comment activity.", "#/ideas")}${ideaGrid(trending)}</div></section>
+<section class="section"><div class="container"><div class="feature-band">
+${feature(icons.spark, "Shape Raw Concepts", "Capture the problem, audience, solution, budget, and
+tags in one structured startup brief.")}
+${feature(icons.users, "Discuss With Builders", "Protected comments keep useful feedback tied to real
+community profiles.")}
+${feature(icons.chart, "Spot Momentum", "Trending scores highlight ideas earning engagement, not
+just the newest posts.")}
+</div></div></section>
+<section class="section"><div class="container"><div class="stats">
+${stat(icons.spark, state.ideas.length, "Ideas shared")}
+${stat(icons.users, state.users.length, "Members")}
+${stat(icons.chart, state.comments.length, "Comments")}
+${stat(icons.bookmark, state.bookmarks.length, "Bookmarks")}
+</div></div></section>
+`;
+}
+function ideasView() {
+return `
+<section class="section">
+<div class="container">
+20 | P a g e
+<div class="page-title"><h1>Explore Ideas</h1><p>Search by title, filter by category, and narrow
+ideas by creation date.</p></div>
+<div class="toolbar">
+<input id="searchInput" type="search" placeholder="Search idea title" />
+<select id="categoryFilter"><option value="">All categories</option>${categories.map((c) =>
+`<option value="${c}">${c}</option>`).join("")}</select>
+<input id="fromDate" type="date" />
+<input id="toDate" type="date" />
+</div>
+<div id="ideasResults">${ideaGrid(state.ideas)}</div>
+</div>
+</section>
+`;
+}
+function detailsView(id) {
+const idea = state.ideas.find((item) => item.id === id);
+if (!idea) return notFoundView();
+const comments = state.comments.filter((comment) => comment.ideaId === id).sort((a, b) => new
+Date(b.createdAt) - new Date(a.createdAt));
+return `
+<section class="section">
+<div class="container details">
+<article class="panel">
+<img src="${escapeHtml(idea.image)}" alt="${escapeHtml(idea.title)}" />
+<p class="kicker">${escapeHtml(idea.category)}</p>
+<h1>${escapeHtml(idea.title)}</h1>
+<p>${escapeHtml(idea.detailedDescription)}</p>
+21 | P a g e
+<h3>Problem Statement</h3><p>${escapeHtml(idea.problemStatement)}</p>
+<h3>Proposed Solution</h3><p>${escapeHtml(idea.proposedSolution)}</p>
+<div class="meta-row">
+<span class="pill">Audience: ${escapeHtml(idea.targetAudience)}</span>
+<span class="pill">Budget: ${idea.budget ? `$${Number(idea.budget).toLocaleString()}` :
+"Open"}</span>
+<span class="pill">${formatDate(idea.createdAt)}</span>
+</div>
+<div class="tag-row">${(idea.tags || []).map((tag) => `<span
+class="pill">#${escapeHtml(tag)}</span>`).join("")}</div>
+<p class="muted">Posted by ${escapeHtml(idea.ownerName)}</p>
+</article>
+<aside class="panel">
+<h2>Discussion</h2>
+<form id="commentForm" data-idea="${idea.id}">
+<div class="field"><label for="commentText">Add comment</label><textarea id="commentText"
+name="commentText" required placeholder="Share feedback, concerns, or validation
+signals"></textarea></div>
+<button class="btn primary" type="submit">Comment</button>
+</form>
+<div class="h-[18px]"></div>
+<div id="commentsList">${comments.length ? comments.map(commentView).join("") : empty("No
+comments yet.", "Start the discussion with practical feedback.")}</div>
+</aside>
+</div>
+</section>
+`;
+}
+22 | P a g e
+function ideaFormView(idea = null) {
+const isEdit = Boolean(idea);
+return `
+<section class="section">
+<div class="container">
+<div class="page-title"><h1>${isEdit ? "Update Idea" : "Add Startup Idea"}</h1><p>Give the
+community enough context to evaluate the opportunity.</p></div>
+<form class="panel form-grid" id="${isEdit ? "updateIdeaForm" : "addIdeaForm"}" ${isEdit ? `dataid="${idea.id}"` : ""}>
+${ideaFields(idea)}
+<div class="field full"><button class="btn primary" type="submit">${icons.plus} ${isEdit ? "Save
+Changes" : "Submit Idea"}</button></div>
+</form>
+</div>
+</section>
+`;
+}
+function ideaFields(idea = {}) {
+idea = idea || {};
+return `
+${field("Idea Title", "title", "text", idea.title, true)}
+<div class="field"><label for="category">Category</label><select id="category" name="category"
+required>${categories.map((c) => `<option ${idea.category === c ? "selected" : ""}
+value="${c}">${c}</option>`).join("")}</select></div>
+${field("Short Description", "shortDescription", "text", idea.shortDescription, true)}
+${field("Image URL", "image", "url", idea.image, true)}
+23 | P a g e
+<div class="field full"><label for="detailedDescription">Detailed Description</label><textarea
+id="detailedDescription" name="detailedDescription" required>${escapeHtml(idea.detailedDescription
+|| "")}</textarea></div>
+${field("Tags", "tags", "text", (idea.tags || []).join(", "), false, "Comma separated")}
+${field("Estimated Budget", "budget", "number", idea.budget, false)}
+${field("Target Audience", "targetAudience", "text", idea.targetAudience, true)}
+<div class="field"><label for="problemStatement">Problem Statement</label><textarea
+id="problemStatement" name="problemStatement" required>${escapeHtml(idea.problemStatement ||
+"")}</textarea></div>
+<div class="field"><label for="proposedSolution">Proposed Solution</label><textarea
+id="proposedSolution" name="proposedSolution" required>${escapeHtml(idea.proposedSolution ||
+"")}</textarea></div>
+`;
+}
+function myIdeasView() {
+const mine = state.ideas.filter((idea) => idea.ownerId === currentUser.id);
+return `
+<section class="section"><div class="container">
+<div class="page-title"><h1>My Ideas</h1><p>Update drafts, remove outdated concepts, and keep
+your vault current.</p></div>
+${mine.length ? ideaGrid(mine, true) : empty("No ideas yet.", "Add your first startup concept to begin
+collecting feedback.")}
+</div></section>
+`;
+}
+function interactionsView() {
+const mine = state.comments.filter((comment) => comment.userId === currentUser.id);
+24 | P a g e
+const ideas = mine.map((comment) => ({ comment, idea: state.ideas.find((idea) => idea.id ===
+comment.ideaId) })).filter((item) => item.idea);
+return `
+<section class="section"><div class="container">
+<div class="page-title"><h1>My Interactions</h1><p>Ideas where you joined the
+discussion.</p></div>
+<div class="grid">${ideas.length ? ideas.map(({ comment, idea }) => ideaCard(idea, false,
+comment.text)).join("") : empty("No interactions yet.", "Comment on an idea and it will appear
+here.")}</div>
+</div></section>
+`;
+}
+function loginView() {
+return `
+<section class="auth-wrap panel">
+<h1>Login</h1>
+<form id="loginForm" class="form-grid">
+${field("Email", "email", "email", "", true)}
+${field("Password", "password", "password", "", true)}
+<div class="field full"><a class="muted" href="#">Forget Password?</a></div>
+<div class="field full"><button class="btn primary" type="submit">Login</button></div>
+</form>
+<button class="btn secondary w-full mt-2.5" data-action="google-login">Google Login</button>
+<p>New here? <a class="muted" href="#/register">Create an account</a></p>
+</section>
+`;
+}
+25 | P a g e
+function registerView() {
+return `
+<section class="auth-wrap panel">
+<h1>Register</h1>
+<form id="registerForm" class="form-grid">
+${field("Name", "name", "text", "", true)}
+${field("Email", "email", "email", "", true)}
+${field("Photo URL", "photo", "url", "", true)}
+${field("Password", "password", "password", "", true)}
+<div class="field full"><button class="btn primary" type="submit">Register</button></div>
+</form>
+<p>Already have an account? <a class="muted" href="#/login">Log in</a></p>
+</section>
+`;
+}
+function profileView() {
+return `
+<section class="auth-wrap panel">
+<h1>Profile Management</h1>
+<form id="profileForm" class="form-grid">
+${field("Name", "name", "text", currentUser.name, true)}
+${field("Photo URL", "photo", "url", currentUser.photo, true)}
+<div class="field full"><button class="btn primary" type="submit">Update Profile</button></div>
+</form>
+</section>
+26 | P a g e
+`;
+}
+function notFoundView(title = "404 - Page not found", text = "The page you opened does not exist.") {
+return `<section class="section"><div class="container">${empty(title, text)}<p><a class="btn primary"
+href="#/">Back Home</a></p></div></section>`;
+}
+function ideaGrid(ideas, ownerTools = false) {
+return ideas.length ? `<div class="grid">${ideas.map((idea) => ideaCard(idea,
+ownerTools)).join("")}</div>` : empty("No ideas found.", "Try a different search or category filter.");
+}
+function ideaCard(idea, ownerTools = false, interactionText = "") {
+const count = state.comments.filter((comment) => comment.ideaId === idea.id).length;
+return `
+<article class="card">
+<img class="card-img" src="${escapeHtml(idea.image)}" alt="${escapeHtml(idea.title)}" />
+<div class="card-body">
+<div class="meta-row"><span class="pill">${escapeHtml(idea.category)}</span><span
+class="pill">${formatDate(idea.createdAt)}</span></div>
+<h3>${escapeHtml(idea.title)}</h3>
+<p>${escapeHtml(idea.shortDescription)}</p>
+<div class="meta-row"><span class="pill">${idea.likes} likes</span><span class="pill">${count}
+comments</span><span class="pill">${idea.budget ? `$${Number(idea.budget).toLocaleString()}` :
+"Budget open"}</span></div>
+${interactionText ? `<p><strong>Your comment:</strong> ${escapeHtml(interactionText)}</p>` : ""}
+<div class="card-actions">
+<a class="btn primary" href="#/ideas/${idea.id}">View Details</a>
+27 | P a g e
+<button class="btn secondary" data-action="bookmark" data-id="${idea.id}">${icons.bookmark}
+Bookmark</button>
+${ownerTools ? `<button class="btn secondary" data-action="edit-idea" dataid="${idea.id}">${icons.edit} Update</button><button class="btn danger" data-action="delete-idea"
+data-id="${idea.id}">${icons.trash} Delete</button>` : ""}
+</div>
+</div>
+</article>
+`;
+}
