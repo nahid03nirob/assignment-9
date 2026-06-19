@@ -387,3 +387,185 @@ likes,
 createdAt: daysAgo(index + commentsCount / 10)
 };
 }
+let state = loadState();
+let currentUser = getSessionUser();
+let pendingRoute = "#/";
+let slideIndex = 0;
+let slideTimer;
+document.documentElement.dataset.theme = state.theme;
+document.documentElement.classList.toggle("dark", state.theme === "dark");
+window.addEventListener("hashchange", render);
+document.addEventListener("click", handleGlobalClick);
+document.addEventListener("submit", handleSubmit);
+document.addEventListener("input", handleInput);
+render();
+function addTw(selector, classes, root = document) {
+const elements = [];
+if (root instanceof Element && root.matches(selector)) elements.push(root);
+6 | P a g e
+root.querySelectorAll(selector).forEach((element) => elements.push(element));
+elements.forEach((element) => {
+element.classList.add(...classes.trim().split(/\s+/));
+});
+}
+function applyTailwind(root = document) {
+const styles = [
+["body", "m-0 min-w-80 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100"],
+[".app-shell", "min-h-screen flex flex-col"],
+[".container", "mx-auto w-full max-w-[1180px] px-4"],
+[".navbar", "sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:borderslate-800 dark:bg-slate-900/90"],
+[".nav-inner", "min-h-[72px] flex items-center justify-between gap-4"],
+[".brand", "inline-flex items-center gap-2.5 text-lg font-extrabold"],
+[".brand-mark", "grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-vault-teal to-vaultblue text-white shadow-lg shadow-teal-700/20"],
+[".nav-links", "absolute left-4 right-4 top-[74px] hidden flex-col items-stretch gap-2 rounded-lg border
+border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-700 dark:bg-slate-900 lg:static lg:flex lg:flexrow lg:items-center lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:dark:bg-transparent"],
+[".nav-actions", "flex items-center gap-2"],
+[".nav-link", "inline-flex min-h-10 items-center justify-start gap-2 rounded-lg px-3 py-2 font-bold
+transition hover:-translate-y-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 lg:justify-center"],
+[".nav-link.active", "bg-slate-100 dark:bg-slate-800"],
+[".btn", "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-transparent px3 py-2 font-bold transition hover:-translate-y-0.5"],
+[".primary", "bg-vault-teal text-white hover:bg-teal-700"],
+[".secondary", "border-slate-200 bg-white text-slate-900 hover:bg-slate-100 dark:border-slate-700
+dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"],
+7 | P a g e
+[".danger", "bg-red-600 text-white hover:bg-red-700"],
+[".ghost", "bg-slate-100 dark:bg-slate-800"],
+[".icon-btn", "inline-grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white
+font-bold transition hover:-translate-y-0.5 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900
+dark:hover:bg-slate-800"],
+[".mobile-toggle", "lg:hidden"],
+[".profile", "relative"],
+[".avatar", "h-9 w-9 rounded-full border-2 border-vault-teal object-cover"],
+[".dropdown", "absolute right-0 top-12 hidden w-64 rounded-lg border border-slate-200 bg-white p-3
+shadow-2xl dark:border-slate-700 dark:bg-slate-900"],
+["main", "flex-1"],
+[".footer", "mt-10 border-t border-slate-200 bg-white py-9 dark:border-slate-800 dark:bg-slate-900"],
+[".footer-grid", "grid gap-6 md:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr]"],
+[".footer a", "my-2 block text-slate-500 dark:text-slate-400"],
+[".footer p", "my-2 text-slate-500 dark:text-slate-400"],
+[".hero", "py-8"],
+[".slider", "relative min-h-[420px] overflow-hidden rounded-lg bg-slate-950 text-white shadow-2xl
+sm:min-h-[460px] lg:min-h-[420px]"],
+[".slide", "absolute inset-0 grid items-center bg-cover bg-center p-7 opacity-0 transition-opacity
+duration-500 sm:p-10 lg:p-16"],
+[".slide-content", "relative z-10 max-w-2xl"],
+[".kicker", "text-xs font-extrabold uppercase text-teal-200"],
+[".hero h1", "my-3 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl lg:text-7xl"],
+[".hero p", "mb-5 max-w-2xl text-base text-white/80 sm:text-lg"],
+[".slider-dots", "absolute bottom-7 left-7 z-10 flex gap-2 sm:left-10 lg:left-16"],
+[".dot", "h-1.5 w-9 rounded-full border-0 bg-white/40"],
+[".section", "py-9"],
+[".section-head", "mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"],
+[".section-head h2", "m-0 text-2xl font-extrabold"],
+8 | P a g e
+[".section-head p", "text-slate-500 dark:text-slate-400"],
+[".page-title", "mb-6"],
+[".page-title h1", "m-0 text-4xl font-extrabold leading-tight sm:text-5xl"],
+[".page-title p", "mt-3 max-w-2xl text-slate-500 dark:text-slate-400"],
+[".grid", "grid gap-5 md:grid-cols-2 lg:grid-cols-3"],
+[".card", "flex min-h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadowlg shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900"],
+[".card-img", "aspect-video w-full bg-slate-100 object-cover dark:bg-slate-800"],
+[".card-body", "flex flex-1 flex-col gap-3 p-4"],
+[".card h3", "m-0 text-lg font-extrabold leading-snug lg:min-h-[58px]"],
+[".card p", "m-0 text-slate-500 dark:text-slate-400"],
+[".meta-row", "flex flex-wrap gap-2"],
+[".tag-row", "flex flex-wrap gap-2"],
+[".pill", "inline-flex min-h-7 items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold textslate-500 dark:bg-slate-800 dark:text-slate-400"],
+[".card-actions", "mt-auto flex flex-wrap gap-2"],
+[".feature-band", "grid gap-5 md:grid-cols-3"],
+[".feature", "rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"],
+[".feature h3", "mt-3 text-lg font-extrabold"],
+[".feature svg", "text-vault-teal"],
+[".stats", "grid gap-4 sm:grid-cols-2 lg:grid-cols-4"],
+[".stat", "rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"],
+[".stat svg", "text-vault-teal"],
+[".stat strong", "mt-2 block text-3xl font-extrabold"],
+[".toolbar", "mb-5 grid gap-3 lg:grid-cols-[1fr_210px_170px_170px]"],
+[".form-grid", "grid gap-4 md:grid-cols-2"],
+[".field", "grid gap-2"],
+[".field.full", "md:col-span-2"],
+9 | P a g e
+["label", "text-sm font-extrabold"],
+["input", "min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outlinenone focus:border-vault-teal focus:ring-4 focus:ring-teal-600/20 dark:border-slate-700 dark:bg-slate-950
+dark:text-slate-100"],
+["textarea", "min-h-32 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate900 outline-none focus:border-vault-teal focus:ring-4 focus:ring-teal-600/20 dark:border-slate-700
+dark:bg-slate-950 dark:text-slate-100"],
+["select", "min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 outlinenone focus:border-vault-teal focus:ring-4 focus:ring-teal-600/20 dark:border-slate-700 dark:bg-slate-950
+dark:text-slate-100"],
+[".panel", "rounded-lg border border-slate-200 bg-white p-5 shadow-lg shadow-slate-900/5
+dark:border-slate-800 dark:bg-slate-900"],
+[".auth-wrap", "mx-auto my-10 w-full max-w-[460px] px-4"],
+[".details", "grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.6fr)]"],
+[".details img", "max-h-[430px] w-full rounded-lg object-cover"],
+[".comment", "mb-3 rounded-lg border border-slate-200 bg-slate-100 p-4 dark:border-slate-700
+dark:bg-slate-800"],
+[".comment-head", "flex justify-between gap-3 text-sm text-slate-500 dark:text-slate-400"],
+[".empty", "grid min-h-[220px] place-items-center rounded-lg border border-dashed border-slate-300
+bg-white text-center dark:border-slate-700 dark:bg-slate-900"],
+[".empty svg", "mx-auto text-vault-teal"],
+[".modal-backdrop", "fixed inset-0 z-[60] grid place-items-center bg-slate-950/60 p-5"],
+[".modal", "max-h-[calc(100vh-36px)] w-full max-w-[760px] overflow-auto rounded-lg border borderslate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900"],
+[".modal.small", "max-w-[430px]"],
+[".spinner-wrap", "grid min-h-[300px] place-items-center"],
+[".spinner", "h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-vault-teal
+dark:border-slate-800 dark:border-t-vault-teal"],
+["#toast-root", "fixed bottom-4 right-4 z-[80] grid gap-2"],
+[".toast", "w-80 max-w-[90vw] rounded-lg bg-slate-900 px-4 py-3 text-white shadow-2xl"],
+10 | P a g e
+[".toast.success", "bg-green-600"],
+[".toast.error", "bg-red-600"],
+[".muted", "text-slate-500 dark:text-slate-400"]
+];
+styles.forEach(([selector, classes]) => addTw(selector, classes, root));
+root.querySelectorAll(".slide").forEach((slide) => {
+if (slide.dataset.bg) slide.style.backgroundImage = `url('${slide.dataset.bg}')`;
+slide.classList.toggle("opacity-100", slide.classList.contains("active"));
+slide.classList.toggle("opacity-0", !slide.classList.contains("active"));
+slide.classList.add("before:absolute", "before:inset-0", "before:bg-gradient-to-r", "before:from-slate950/90", "before:via-slate-950/55", "before:to-slate-950/10");
+});
+root.querySelectorAll(".dot").forEach((dot) => {
+dot.classList.toggle("bg-white", dot.classList.contains("active"));
+dot.classList.toggle("bg-white/40", !dot.classList.contains("active"));
+});
+}
+function uid() {
+return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() :
+`id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+function daysAgo(days) {
+const date = new Date();
+date.setDate(date.getDate() - days);
+return date.toISOString();
+11 | P a g e
+}
+function loadState() {
+try {
+const saved = localStorage.getItem(STORAGE_KEY);
+if (!saved) {
+const freshState = cloneState(initialState);
+localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState));
+return freshState;
+}
+return normalizeState(JSON.parse(saved));
+} catch {
+const freshState = cloneState(initialState);
+localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState));
+return freshState;
+}
+}
+function saveState() {
+localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function cloneState(value) {
+return JSON.parse(JSON.stringify(value));
+}
+function normalizeState(saved) {
+12 | P a g e
+return {
+theme: saved.theme === "dark" ? "dark" : "light",
+users: Array.isArray(saved.users) ? saved.users : cloneState(initialState.users),
+ideas: Array.isArray(saved.ideas) ? saved.ideas : cloneState(initialState.ideas),
+comments: Array.isArray(saved.comments) ? saved.comments : [],
+bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : []
+};
+}
